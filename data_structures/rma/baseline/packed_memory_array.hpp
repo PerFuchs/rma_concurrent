@@ -29,6 +29,7 @@
 #include "rma/common/density_bounds.hpp"
 #include "rma/common/detector.hpp"
 #include "rma/common/knobs.hpp"
+#include <data_structures/rma/common/vertex_index.hpp>
 #include "rma/common/memory_pool.hpp"
 #include "rma/common/static_index.hpp"
 #include "pointer.hpp"
@@ -66,6 +67,7 @@ protected:
     std::atomic<int64_t> m_cardinality = 0; // the number of elements contained in the data structure
     Storage m_storage; // actual content. There is no need to further protect its access, workers/rebalancers need to hold a lock to the related extent to alter it
     Pointer<StaticIndex> m_index; // the static index
+    Pointer<VertexIndex> m_vertex_index;
     Pointer<Gate> m_locks; // array of locks, to protect access to the single chunks of the PMA
     Knobs m_knobs; // APMA settings
     common::Detector m_detector; // Record updates
@@ -181,7 +183,14 @@ protected:
     // Dump the content of the storage
     void dump_storage(std::ostream& out, bool* integrity_check) const;
 
-protected:
+    void adjust_vertex_index_on_insert(VertexIndex* vertex_index, size_t segment_inserted_to, int64_t key);
+    void adjust_vertex_index_on_remove(VertexIndex* vertex_index, int64_t key);
+    void adjust_vertex_index_for_chunk(int64_t window_start, int64_t window_length);
+    uint32_t adjust_vertex_index_for_segment(size_t segment_id, uint32_t last_vertex, VertexIndex* vertexIndex);
+
+    size_t get_segment_id(size_t index);
+
+    protected:
     // Find the position of the key in the given segment, or return -1 if not found.
     // Helper for the class Weights. This method is not thread safe.
     int find_position(size_t segment_id, int64_t key) const noexcept;
@@ -322,6 +331,12 @@ public:
      * Memory footprint
      */
     size_t memory_footprint() const override;
-};
+
+
+    VertexIndex *get_vertex_index() const;
+
+    int64_t get_at(size_t position) const;
+
+    };
 
 } // namespace

@@ -184,6 +184,9 @@ void RebalancingMaster::main_thread(){
                         m_todo[i]->m_blocked_on_lock = -1;
                     }
                 }
+
+                rebal_task->m_pma->adjust_vertex_index_for_chunk(rebal_task->get_window_start(), rebal_task->get_window_length());
+
                 // 2) unlock the client threads associated to the gates rebalanced
                 for(size_t i = rebal_task->get_lock_start(), end = rebal_task->get_lock_end(); i < end; i++){
                     release_lock(i);
@@ -224,6 +227,8 @@ void RebalancingMaster::main_thread(){
                 m_instance->m_index.set(index_new);
                 barrier();
                 m_instance->m_locks.timestamp() = m_instance->m_index.timestamp() = rdtscp();
+
+                m_instance->adjust_vertex_index_for_chunk(0, m_instance->m_storage.m_number_segments);
 
                 // 3) Invalidate the old locks and unblock the threads
                 for(size_t i = 0; i < num_locks_old; i++){

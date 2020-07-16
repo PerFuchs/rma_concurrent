@@ -96,6 +96,7 @@ sources := \
 	data_structures/rma/common/partition.cpp \
 	data_structures/rma/common/rewired_memory.cpp \
 	data_structures/rma/common/static_index.cpp \
+	data_structures/rma/common/vertex_index.cpp \
 	data_structures/rma/one_by_one/adaptive_rebalancing.cpp \
 	data_structures/rma/one_by_one/garbage_collector.cpp \
 	data_structures/rma/one_by_one/gate.cpp \

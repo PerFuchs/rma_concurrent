@@ -22,6 +22,7 @@
 #include <cassert>
 #include <mutex>
 #include <thread>
+#include <data_structures/pcsr/graph_types.h>
 
 #include "common/configuration.hpp"
 #include "common/database.hpp"
@@ -32,9 +33,11 @@
 #include "data_structures/parallel.hpp"
 #include "distributions/driver.hpp"
 #include "distributions/interface.hpp"
+#include "data_structures/rma/baseline/packed_memory_array.hpp"
 
 using namespace std;
 using namespace common;
+using namespace data_structures::rma::baseline;
 
 namespace experiments {
 
@@ -76,6 +79,21 @@ static void pin_thread_to_socket(){
 }
 
 static
+void validate_index(PackedMemoryArray& ds, VertexIndex* vertex_index, unordered_map<uint32_t, uint32_t>& gold_standard) {
+  for (const auto v : vertex_index->vertices()) {
+      auto gs = gold_standard.find(v);
+      if (ds.get_at(vertex_index->get_vertex_start(v)) != TO_EDGE(gs->first, gs->second)) {
+        cout << "Validation failed" << endl;
+        cout << " SRC " << v;
+        cout << "Position according to index " << vertex_index->get_vertex_start(v) << endl;
+        cout << "Position according to find: " << ds.find(TO_EDGE(gs->first, gs->second)) << endl;
+        cout << "Value" << ds.get_at(vertex_index->get_vertex_start(v)) << endl;
+        assert(false);
+      }
+  }
+}
+
+static
 void thread_execute_inserts(int worker_id, data_structures::Interface* data_structure, DistributionParallel* distribution, atomic<int>* startup_counter){
     pin_thread_to_socket();
 
@@ -94,11 +112,34 @@ void thread_execute_inserts(int worker_id, data_structures::Interface* data_stru
     while(*startup_counter > 0) /* nop */;
     barrier();
 
+    unordered_map<uint32_t, uint32_t> gold_standard_vertex_index(1000000);
+    PackedMemoryArray& ds = dynamic_cast<PackedMemoryArray&>(*data_structure);
+    VertexIndex* vertex_index = ds.get_vertex_index();
+
     while(distribution_window.m_count > 0){
         for(size_t i = 0; i < distribution_window.m_count; i++){
-            int64_t key = distribution->get(distribution_window.m_position + i);
+            int64_t key = (distribution->get(distribution_window.m_position + i)) << 20;
             int64_t value = key * 100;
             data_structure->insert(key, value);
+
+            // Update gold standard
+            auto src = TO_SRC(key);
+            auto dst = TO_DST(key);
+            if (gold_standard_vertex_index.count(src) == 0) {
+              gold_standard_vertex_index.insert(make_pair(src, dst));
+            } else if (gold_standard_vertex_index.find(src)->second > dst) {
+              gold_standard_vertex_index.insert_or_assign(src, dst);
+            }
+
+            auto gold_standard = gold_standard_vertex_index.find(src);
+
+//            cout << "Key: " << key << " SRC " << src << " dst " << dst << " edge " << endl;
+//            cout << "Position according to index " << vertex_index->get_vertex_start(src) << endl;
+//            cout << "find says: " << ds.find(TO_EDGE(gold_standard_vertex_index.find(src)->first, gold_standard_vertex_index.find(src)->second)) << endl;
+//            cout << "PMA says: " << ds.get_at(vertex_index->get_vertex_start(src)) << endl;
+            assert(ds.get_at(vertex_index->get_vertex_start(src)) == TO_EDGE(gold_standard->first, gold_standard->second));
+//            validate_index(\ds, vertex_index, gold_standard_vertex_index);
+//            cout << "Done" << endl;
         }
 
         // fetch the next chunk of the keys to insert
@@ -110,6 +151,7 @@ void thread_execute_inserts(int worker_id, data_structures::Interface* data_stru
 
     // done
 }
+
 
 static
 void thread_execute_scans(int worker_id, data_structures::Interface* data_structure, atomic<int>* startup_counter, uint64_t* output_num_elements_visited){
