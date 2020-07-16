@@ -122,22 +122,23 @@ void thread_execute_inserts(int worker_id, data_structures::Interface* data_stru
             int64_t value = key * 100;
             data_structure->insert(key, value);
 
-            // Update gold standard
-            auto src = TO_SRC(key);
-            auto dst = TO_DST(key);
-            if (gold_standard_vertex_index.count(src) == 0) {
-              gold_standard_vertex_index.insert(make_pair(src, dst));
-            } else if (gold_standard_vertex_index.find(src)->second > dst) {
-              gold_standard_vertex_index.insert_or_assign(src, dst);
-            }
-
-            auto gold_standard = gold_standard_vertex_index.find(src);
+            // Simple test case for vertex index.
+//            // Update gold standard
+//            auto src = TO_SRC(key);
+//            auto dst = TO_DST(key);
+//            if (gold_standard_vertex_index.count(src) == 0) {
+//              gold_standard_vertex_index.insert(make_pair(src, dst));
+//            } else if (gold_standard_vertex_index.find(src)->second > dst) {
+//              gold_standard_vertex_index.insert_or_assign(src, dst);
+//            }
+//
+//            auto gold_standard = gold_standard_vertex_index.find(src);
 
 //            cout << "Key: " << key << " SRC " << src << " dst " << dst << " edge " << endl;
 //            cout << "Position according to index " << vertex_index->get_vertex_start(src) << endl;
 //            cout << "find says: " << ds.find(TO_EDGE(gold_standard_vertex_index.find(src)->first, gold_standard_vertex_index.find(src)->second)) << endl;
 //            cout << "PMA says: " << ds.get_at(vertex_index->get_vertex_start(src)) << endl;
-            assert(ds.get_at(vertex_index->get_vertex_start(src)) == TO_EDGE(gold_standard->first, gold_standard->second));
+//            assert(ds.get_at(vertex_index->get_vertex_start(src)) == TO_EDGE(gold_standard->first, gold_standard->second));
 //            validate_index(\ds, vertex_index, gold_standard_vertex_index);
 //            cout << "Done" << endl;
         }
