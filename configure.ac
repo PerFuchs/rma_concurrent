@@ -30,8 +30,8 @@ AC_CONFIG_FILES([Makefile])
 #############################################################################
 # Set the compiler $CC and $CXX. Prefer clang over gcc
 old_CFLAGS="${CFLAGS}"; old_CXXFLAGS="${CXXFLAGS}" dnl Do not automatically set -g -O2
-AC_PROG_CC([clang gcc icc cc])
-AC_PROG_CXX([clang++ g++ icpc c++ cxx])
+AC_PROG_CC([gcc clang icc cc])
+AC_PROG_CXX([g++ clang++ icpc c++ cxx])
 CFLAGS="${old_CFLAGS}"; unset old_CFLAGS; CXXFLAGS="${old_CXXFLAGS}"; unset old_CXXFLAGS;
 AX_CXX_COMPILE_STDCXX_17 dnl Ask for C++17, thanks!
 
@@ -89,8 +89,7 @@ for header in "event2/event.h" "event2/thread.h"; do
         [AC_MSG_ERROR([missing prerequisite: this program requires the headers for libevent v2.1.x with support for pthreads (dependency for the apma_parallel3's Timer)]) ],
         [ [/* avoid default includes */] ])
 done
-AC_SEARCH_LIBS([libevent_global_shutdown], [event_core event], [],
-    [ AC_MSG_ERROR([missing prerequisite: this program requires libevent to work (dependency for the apma_parallel3's Timer)]) ])
+
 AC_SEARCH_LIBS([evthread_use_pthreads], [event_pthreads event], [],
     [ AC_MSG_ERROR([missing prerequisite: this program requires libevent with support for pthreads to work (dependency for the apma_parallel3's Timer)]) ])
 
