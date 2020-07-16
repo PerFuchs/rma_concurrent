@@ -62,7 +62,7 @@ Configuration::Configuration() {
     m_verbose = dynamic_cast<details::ParameterImpl<bool>*>(m_console_parameters.back());
     auto parameter_git_commit = PARAMETER(string, "git_commit").hint("commit")
             .descr("Record in the database the current git commit. It does not change the execution. By default, it attempts to retrieve the current commit automatically.");
-    auto str_git_last_commit = git_last_commit();
+    string str_git_last_commit; //git_last_commit();
     if(!str_git_last_commit.empty()){ parameter_git_commit.set_default(str_git_last_commit); }
     PARAMETER(uint64_t, "seed_lookups").hint("N").set_default(73867)
             .descr("The seed for the experiment lookups");
@@ -74,6 +74,8 @@ Configuration::Configuration() {
             .descr("Capacity of the the internal memory pools");
     PARAMETER(bool, "hugetlb")
         .descr("Use huge pages (2Mb) with the algorithms that support memory rewiring");
+    PARAMETER(size_t, "vertices")
+      .descr("Maximum number of vertices used");
 }
 
 Configuration::~Configuration() {
