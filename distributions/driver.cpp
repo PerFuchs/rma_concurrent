@@ -25,6 +25,7 @@
 #include "sparse_uniform_distribution.hpp"
 #include "uniform_distribution.hpp"
 #include "zipf_distribution.hpp"
+#include "graph_distribution.hpp"
 
 #include "common/configuration.hpp"
 #include "common/console_arguments.hpp"
@@ -112,6 +113,11 @@ void initialise(){
         uint64_t seed = ARGREF(uint64_t, "seed_random_permutation");
         return make_zipf(alpha, ARGREF(int64_t, "num_inserts"), beta, seed);
     });
+
+  ADD_DISTRIBUTION("graph", "Generate edges from a binary graph file (edge=<uint32_t, uint32_t). Needs argument <filepath>. Can use argument <offset> to generate a initial graph and updates from the same file.", [](){
+      LOG_VERBOSE("Distribution: graph");
+      return make_graph(ARGREF(string, "graph_file"), ARGREF(int64_t, "num_insertions"), ARGREF(size_t, "graph_insert_offset"));
+  });
 
     /**
      * Parameters

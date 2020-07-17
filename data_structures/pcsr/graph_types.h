@@ -11,6 +11,6 @@
 #define TO_SRC(edge) (edge & SRC_MASK) >> 32
 #define TO_DST(edge) edge & DST_MASK
 
-#define TO_EDGE(src, dst) ((int64_t) src << 32) + dst
+#define TO_EDGE(src, dst) (((int64_t) src) << 32) + dst
 
 #endif //PCSR2_GRAPH_TYPES_H

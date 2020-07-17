@@ -1884,6 +1884,7 @@ void PackedMemoryArray::do_sum(uint64_t gate_id, int64_t& next_min, int64_t max,
  * @param window_length
  */
     void PackedMemoryArray::adjust_vertex_index_for_chunk(int64_t window_start, int64_t window_length) {
+//      return;
       VertexIndex *vertex_index = m_vertex_index.get(get_context());
 
       auto first_entry_pos = 0;
@@ -1936,6 +1937,7 @@ void PackedMemoryArray::do_sum(uint64_t gate_id, int64_t& next_min, int64_t max,
     }
 
     void PackedMemoryArray::adjust_vertex_index_on_insert(VertexIndex* vertex_index, size_t segment_inserted_to, int64_t key) {
+//      return;
       auto src = TO_SRC(key);
       auto dst = TO_DST(key);
 

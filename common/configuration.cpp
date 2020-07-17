@@ -76,6 +76,10 @@ Configuration::Configuration() {
         .descr("Use huge pages (2Mb) with the algorithms that support memory rewiring");
     PARAMETER(size_t, "vertices")
       .descr("Maximum number of vertices used");
+    PARAMETER(string, "graph_file")
+          .descr("Filepath to the file to load graph edges from.");
+    PARAMETER(size_t, "graph_insert_offset").set_default(numeric_limits<size_t>::max())
+          .descr("Offset within the graph file for the insertions to start from an initial graph");
 }
 
 Configuration::~Configuration() {

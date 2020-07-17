@@ -25,6 +25,7 @@ file(GLOB SRC
         third-party/openbwtree/*.cpp
         third-party/art-olc/*.cpp
         third-party/gperftools-2.7/*.cpp
+        distributions/*.cpp
         )
 
 include_directories(.)
