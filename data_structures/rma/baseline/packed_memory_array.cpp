@@ -1988,5 +1988,11 @@ void PackedMemoryArray::do_sum(uint64_t gate_id, int64_t& next_min, int64_t max,
       }
     }
 
+    void PackedMemoryArray::start_vertex_index() {
+      m_vertex_index.get_unsafe()->start_tracking();
+      adjust_vertex_index_for_chunk(0, m_storage.m_number_segments);
+      cout << "Started vertex index";
+    }
+
 } // namespace
 

@@ -36,6 +36,7 @@
 #include "experiments/parallel_idls.hpp"
 #include "experiments/parallel_insert.hpp"
 #include "experiments/parallel_scan.hpp"
+#include "experiments/parallel_two_phase_insert.hpp"
 
 // data structures
 #include "abtree/parallel/abtree.hpp"
@@ -215,6 +216,11 @@ void initialise() {
     PARAMETER(uint64_t, "duration")["D"].hint("secs").descr("The duration of each scan in the experiment parallel_scan, in seconds.").set_default(360);
     REGISTER_EXPERIMENT("parallel_scan", "Perform scans with multiple threads over 1% of the data structure. Use -I to set the size of the data structure and -D the duration of each scan, in seconds", [](shared_ptr<Interface> data_structure){
         return make_unique<experiments::ParallelScan>(data_structure, chrono::seconds( ARGREF(uint64_t, "duration") ));
+    });
+
+    REGISTER_EXPERIMENT("parallel_two_phase_insert", "",[](shared_ptr<Interface> data_structure) {
+        auto param_thread_inserts = ARGREF(uint64_t, "thread_inserts");
+        return make_unique<experiments::ParallelTwoPhaseInsert>(data_structure, param_thread_inserts);
     });
 
     /**

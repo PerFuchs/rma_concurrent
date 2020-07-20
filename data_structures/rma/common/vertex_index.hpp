@@ -19,6 +19,7 @@ class VertexIndex {
     set<uint32_t> v;
     vector<size_t> vertex_starts;
     vector<uint32_t> degrees;
+    bool track = false;
 
 public:
     const static uint32_t UNDEFINED = std::numeric_limits<uint32_t>::max();
@@ -42,6 +43,8 @@ public:
     void set_undefined(uint32_t vertex);
 
     const set<uint32_t> &vertices() const;
+
+    void start_tracking();
 };
 
 

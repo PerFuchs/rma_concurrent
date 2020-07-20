@@ -337,6 +337,8 @@ public:
 
     int64_t get_at(size_t position) const;
 
+    void start_vertex_index();
+
     };
 
 } // namespace

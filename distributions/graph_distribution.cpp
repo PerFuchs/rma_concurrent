@@ -6,6 +6,7 @@
 #include <cassert>
 #include <sys/stat.h>
 
+#include "common/console_arguments.hpp"
 #include "graph_distribution.hpp"
 
 using namespace std;
@@ -26,13 +27,13 @@ namespace distributions {
 
 
     vector<Edge> read_binary(const string& filename, size_t limit, size_t offset) {
-      cout << "Reading binary graph file: " << filename << endl;
+      cout << "Reading binary graph file: " << filename << " from " << offset << " to " << limit << endl;
 
       FILE *file = fopen(filename.c_str(), "rb");
       assert(file && "Filename incorrect");
 
       size_t fileSize = fsize(filename);
-      size_t numberOfEdges = fileSize / sizeof(Edge) - offset * sizeof(Edge);
+      size_t numberOfEdges = fileSize / sizeof(Edge);
 
       fseek(file, offset * sizeof(Edge), SEEK_SET);
 
@@ -41,7 +42,7 @@ namespace distributions {
 
       size_t edge_counter = 0;
       Edge edge = {0, 0};
-      while (edge_counter <= limit && fread(&edge, sizeof(edge), 1, file) > 0) {
+      while (edge_counter < limit && fread(&edge, sizeof(edge), 1, file) > 0) {
         edges.push_back(edge);
 
         edge_counter++;
@@ -56,8 +57,11 @@ namespace distributions {
     }
 
     std::unique_ptr<Interface> make_graph(const string& filepath, size_t limit, size_t offset) {
-      if (!GraphDistribution::use_offset || offset == numeric_limits<size_t>::max()) {
+      if (!GraphDistribution::use_offset) {
         offset = 0;
+      } else {
+        offset = limit;
+        limit = numeric_limits<size_t>::max();
       }
       return std::unique_ptr<Interface> (new
       GraphDistribution(filepath, limit, offset));
