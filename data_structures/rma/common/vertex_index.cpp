@@ -13,10 +13,11 @@ size_t VertexIndex::get_vertex_start(uint32_t vertex) {
 
 void VertexIndex::set_vertex_start(uint32_t vertex, size_t start) {
   assert(vertex < vertex_starts.size());
-  if (vertex_starts[vertex] == UNDEFINED) {
-    v.insert(vertex);
-  }
-  vertex_starts[vertex] = start;
+//  cout << "Setting " << vertex << " to " << start << endl;
+//  if (vertex_starts[vertex] == UNDEFINED) {
+//    v.insert(vertex);
+//  }
+//  vertex_starts[vertex] = start;
 }
 
 uint32_t VertexIndex::get_vertex_degree(uint32_t vertex) {
@@ -39,7 +40,7 @@ void VertexIndex::set_undefined(uint32_t vertex) {
   assert(vertex < vertex_starts.size());
   vertex_starts[vertex] = UNDEFINED;
   degrees[vertex] = UNDEFINED;
-  v.erase(vertex);
+//  v.erase(vertex);
 }
 
 const set<uint32_t> &VertexIndex::vertices() const {

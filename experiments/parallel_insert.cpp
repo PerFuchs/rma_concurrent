@@ -80,14 +80,15 @@ namespace experiments {
 
         static
 void validate_index(PackedMemoryArray& ds, VertexIndex* vertex_index, unordered_map<uint32_t, uint32_t>& gold_standard) {
-          for (const auto v : vertex_index->vertices()) {
-            auto gs = gold_standard.find(v);
-            if (ds.get_at(vertex_index->get_vertex_start(v)) != TO_EDGE(gs->first, gs->second)) {
+          for (const auto edge : gold_standard) {
+            auto src = edge.first;
+            auto dst = edge.second;
+            if (ds.get_at(vertex_index->get_vertex_start(src)) != TO_EDGE(src, dst)) {
               cout << "Validation failed" << endl;
-              cout << " SRC " << v;
-              cout << "Position according to index " << vertex_index->get_vertex_start(v) << endl;
-              cout << "Position according to find: " << ds.find(TO_EDGE(gs->first, gs->second)) << endl;
-              cout << "Value" << ds.get_at(vertex_index->get_vertex_start(v)) << endl;
+              cout << " SRC " << src;
+              cout << "Position according to index " << vertex_index->get_vertex_start(src) << endl;
+              cout << "Position according to find: " << ds.find(TO_EDGE(src, dst)) << endl;
+              cout << "Value" << ds.get_at(vertex_index->get_vertex_start(src)) << endl;
               assert(false);
             }
           }
@@ -113,8 +114,8 @@ void thread_execute_inserts(int worker_id, data_structures::Interface* data_stru
           barrier();
 
           unordered_map<uint32_t, uint32_t> gold_standard_vertex_index(ARGREF(size_t, "vertices"));
-          PackedMemoryArray &ds = dynamic_cast<PackedMemoryArray &>(*data_structure);
-          VertexIndex *vertex_index = ds.get_vertex_index();
+//          PackedMemoryArray &ds = dynamic_cast<PackedMemoryArray &>(*data_structure);
+//          VertexIndex *vertex_index = ds.get_vertex_index();
 
           while (distribution_window.m_count > 0) {
             for (size_t i = 0; i < distribution_window.m_count; i++) {
@@ -124,31 +125,31 @@ void thread_execute_inserts(int worker_id, data_structures::Interface* data_stru
 
               // Simple test case for vertex index.
 //            // Update gold standard
-              auto src = TO_SRC(key);
-              auto dst = TO_DST(key);
-              if (gold_standard_vertex_index.count(src) == 0) {
-                gold_standard_vertex_index.insert(make_pair(src, dst));
-              } else if (gold_standard_vertex_index.find(src)->second > dst) {
-                gold_standard_vertex_index.insert_or_assign(src, dst);
-              }
-//
-//            auto gold_standard = gold_standard_vertex_index.find(src);
+//              auto src = TO_SRC(key);
+//              auto dst = TO_DST(key);
+//              if (gold_standard_vertex_index.count(src) == 0) {
+//                gold_standard_vertex_index.insert(make_pair(src, dst));
+//              } else if (gold_standard_vertex_index.find(src)->second > dst) {
+//                gold_standard_vertex_index.insert_or_assign(src, dst);  // gold standard not updated properly why?
+//              }
 
+//            auto gold_standard = gold_standard_vertex_index.find(src);
+//
 //            cout << "Key: " << key << " SRC " << src << " dst " << dst << " edge " << endl;
 //            cout << "Position according to index " << vertex_index->get_vertex_start(src) << endl;
 //            cout << "find says: " << ds.find(TO_EDGE(gold_standard_vertex_index.find(src)->first, gold_standard_vertex_index.find(src)->second)) << endl;
 //            cout << "PMA says: " << ds.get_at(vertex_index->get_vertex_start(src)) << endl;
 //            assert(ds.get_at(vertex_index->get_vertex_start(src)) == TO_EDGE(gold_standard->first, gold_standard->second));
+//              validate_index(ds, vertex_index, gold_standard_vertex_index);
 
-//            cout << "Done" << endl;
+//              cout << "Done" << endl;
             }
 
             // fetch the next chunk of the keys to insert
             distribution_window = distribution->fetch(keys_to_fetch);
           }
 
-          cout << "Validating" << endl;
-          validate_index(ds, vertex_index, gold_standard_vertex_index);
+//          cout << "Validating" << endl;
 
 
           // invoke the clean up callback

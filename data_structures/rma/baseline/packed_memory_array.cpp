@@ -457,8 +457,8 @@ PackedMemoryArray::PackedMemoryArray(size_t btree_block_size, size_t pma_segment
           if (!inserted) { // this is going to take a while
             rebalance_global(gate);
           } else {
-            auto segment_id = gate->find(key);
-            adjust_vertex_index_on_insert(vertex_index, segment_id, key);
+//            auto segment_id = gate->find(key);
+//            adjust_vertex_index_on_insert(vertex_index, segment_id, key);
 
             insert_on_exit(gate);
             done = true;
@@ -497,6 +497,7 @@ PackedMemoryArray::PackedMemoryArray(size_t btree_block_size, size_t pma_segment
       m_storage.m_keys[pos] = key;
       m_storage.m_values[pos] = value;
       m_cardinality = 1;
+      m_vertex_index.get_unsafe()->set_vertex_start(TO_SRC(key), pos);
     }
 
     bool PackedMemoryArray::insert_common(size_t segment_id, int64_t key, int64_t value) {
@@ -522,7 +523,10 @@ PackedMemoryArray::PackedMemoryArray(size_t btree_block_size, size_t pma_segment
     bool PackedMemoryArray::storage_insert_unsafe(size_t segment_id, int64_t key, int64_t value) {
       assert(m_storage.m_segment_sizes[segment_id] < m_storage.m_segment_capacity && "This segment is full!");
 
-      int64_t *__restrict keys = m_storage.m_keys + segment_id * m_storage.m_segment_capacity;
+      VertexIndex* vertex_index = m_vertex_index.get_unsafe();
+
+      auto segment_start = segment_id * m_storage.m_segment_capacity;
+      int64_t *__restrict keys = m_storage.m_keys + segment_start;
       int64_t *__restrict values = m_storage.m_values + segment_id * m_storage.m_segment_capacity;
       bool minimum = false; // the inserted key is the new minimum ?
       size_t sz = m_storage.m_segment_sizes[segment_id];
@@ -534,13 +538,29 @@ PackedMemoryArray::PackedMemoryArray(size_t btree_block_size, size_t pma_segment
         size_t start = m_storage.m_segment_capacity - sz - 1;
         size_t i = start;
 
+        auto last_src = TO_SRC(keys[i + 1]);
+        if (get_segment_id(vertex_index->get_vertex_start(last_src)) == segment_id) {
+          last_src = -1;  // update first key only if it's been part of the segment before.
+        }
+
+        int32_t src;
         while (i < stop && keys[i + 1] < key) {
+          src = TO_SRC(keys[i+1]);
+          if (src != last_src) {
+            last_src = src;
+            vertex_index->set_vertex_start(src, segment_start + i);
+          }
           keys[i] = keys[i + 1];
           i++;
         }
 
 //        COUT_DEBUG("(even) segment_id: " << segment_id << ", start: " << start << ", stop: " << stop << ", key: " << key << ", value: " << value << ", position: " << i);
         keys[i] = key;
+
+        src = TO_SRC(key);
+        if (vertex_index->is_undefined(src) || vertex_index->get_vertex_start(src) > segment_start + i) {
+          vertex_index->set_vertex_start(src, segment_start + i);
+        }
 
         for (size_t j = start; j < i; j++) {
           values[j] = values[j + 1];
@@ -556,13 +576,36 @@ PackedMemoryArray::PackedMemoryArray(size_t btree_block_size, size_t pma_segment
 
       } else { // for odd segment ids (1, 3, ...), insert at the front of the segment
         size_t i = sz;
+
+        auto last_src = TO_SRC(keys[i-1]);
+
+        int32_t src;
         while (i > 0 && keys[i - 1] > key) {
+          src = TO_SRC(keys[i-1]);
+          if (last_src != src) {
+            vertex_index->set_vertex_start(last_src, segment_start + i + 1);
+            last_src = src;
+          }
           keys[i] = keys[i - 1];
           i--;
         }
+        keys[i] = key;
+
+        // handle the last vertex encountered
+        if (i != sz) { // if the loop executed at least once
+          auto src_vertex_index = vertex_index->get_vertex_start(src);
+          if (get_segment_id(src_vertex_index) == segment_id && segment_start + i <= src_vertex_index) {
+            vertex_index->set_vertex_start(src, segment_start + i + 1);
+          }
+        }
 
 //        COUT_DEBUG("(odd) segment_id: " << segment_id << ", key: " << key << ", value: " << value << ", position: " << i);
-        keys[i] = key;
+
+        // handle the new edge
+        src = TO_SRC(key);
+        if (vertex_index->is_undefined(src) || vertex_index->get_vertex_start(src) > segment_start + i) {
+          vertex_index->set_vertex_start(src, segment_start + i);
+        }
 
         for (size_t j = sz; j > i; j--) {
           values[j] = values[j - 1];
@@ -1934,30 +1977,6 @@ void PackedMemoryArray::do_sum(uint64_t gate_id, int64_t& next_min, int64_t max,
 
     int64_t PackedMemoryArray::get_at(size_t position) const {
       return m_storage.m_keys[position];
-    }
-
-    void PackedMemoryArray::adjust_vertex_index_on_insert(VertexIndex* vertex_index, size_t segment_inserted_to, int64_t key) {
-//      return;
-      auto src = TO_SRC(key);
-      auto dst = TO_DST(key);
-
-      // Handle case of first edge for this vertex.
-      if (vertex_index->is_undefined(src)) {
-        auto segment_capacity = m_storage.m_segment_capacity;
-        auto total_position = segment_inserted_to * segment_capacity;
-
-        auto position_in_segment = find_position(segment_inserted_to, key);
-        if (segment_inserted_to % 2 == 0) {
-          total_position += segment_capacity - m_storage.m_segment_sizes[segment_inserted_to] + position_in_segment;
-        } else {
-          total_position += position_in_segment;
-        }
-
-        vertex_index->set_vertex_start(src, total_position);
-      }
-
-      // Reset index for the segment.
-      adjust_vertex_index_for_chunk(segment_inserted_to, 1);
     }
 
     void PackedMemoryArray::adjust_vertex_index_on_remove(VertexIndex *vertex_index, int64_t key) {
